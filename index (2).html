@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gooseless — match with a person, not looks</title>
+  <meta name="theme-color" content="#0c1f21"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,700;0,900;1,300&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a1a1c;--bg2:#0f2224;
+      --text:#F7F3EC;--muted:rgba(247,243,236,0.45);--muted2:rgba(247,243,236,0.2);
+      --accent:#E5C19E;--orange:#E98110;--border:rgba(229,193,158,0.13);
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh}
+    ::-webkit-scrollbar{width:0}
+    body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:0.5}
+    body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);pointer-events:none;z-index:999}
+
+    .orb{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);z-index:0}
+    .orb1{width:700px;height:700px;background:rgba(233,129,16,0.09);top:-250px;right:-250px}
+    .orb2{width:500px;height:500px;background:rgba(22,52,51,0.7);bottom:-150px;left:-150px}
+
+    .streak{position:fixed;top:0;left:-100%;width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(229,193,158,0.4),transparent);z-index:2;animation:streakMove 6s ease-in-out infinite}
+    .streak2{animation-delay:3s;top:35%}
+    @keyframes streakMove{0%{left:-60%;opacity:0}20%{opacity:1}80%{opacity:0.4}100%{left:120%;opacity:0}}
+
+    .cards-ring{position:fixed;inset:0;pointer-events:none;z-index:2}
+    .fcard{position:absolute;background:rgba(15,34,36,0.85);border:0.5px solid var(--border);border-radius:9px;padding:8px 13px;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.04em;backdrop-filter:blur(8px);white-space:nowrap;animation:cardFloat 8s ease-in-out infinite;display:flex;align-items:center;gap:7px}
+    .fcard::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:0.6;flex-shrink:0}
+    .fcard:nth-child(1){top:14%;left:2%;animation-delay:0s}
+    .fcard:nth-child(2){top:24%;right:3%;animation-delay:1.2s}
+    .fcard:nth-child(3){top:44%;left:1%;animation-delay:2.1s}
+    .fcard:nth-child(4){top:58%;right:2%;animation-delay:0.7s}
+    @keyframes cardFloat{0%,100%{transform:translateY(0) rotate(-0.4deg)}33%{transform:translateY(-9px) rotate(0.3deg)}66%{transform:translateY(4px) rotate(-0.3deg)}}
+
+    .gl-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:0.5px solid transparent;transition:all 0.3s}
+    .gl-nav.scrolled{background:rgba(10,26,28,0.9);backdrop-filter:blur(16px);border-color:var(--border)}
+    .nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none}
+    .nav-goose{width:26px;height:26px;border-radius:7px;overflow:hidden;border:1px solid rgba(229,193,158,0.25)}
+    .nav-goose img{width:100%;height:100%;object-fit:cover;display:block}
+    .nav-word{font-size:14px;font-weight:800;letter-spacing:-0.04em;color:var(--text)}
+    .nav-word em{font-style:normal;color:var(--orange)}
+    .nav-btn{font-size:11px;font-weight:700;color:var(--bg);background:var(--accent);padding:7px 16px;border-radius:99px;text-decoration:none;transition:opacity 0.15s}
+    .nav-btn:hover{opacity:0.82}
+
+    #main{position:relative;z-index:3;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 120px}
+
+    .hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--orange);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:10px;animation:fadeUp 0.6s ease 0.1s both}
+    .hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:60px;height:0.5px;background:var(--border)}
+
+    .hero-icon{width:76px;height:76px;border-radius:18px;overflow:hidden;border:1.5px solid rgba(229,193,158,0.28);margin:0 auto 32px;animation:float 5s ease-in-out infinite;box-shadow:0 0 40px rgba(233,129,16,0.15)}
+    .hero-icon img{width:100%;height:100%;object-fit:cover;display:block}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+    .hero-h1{font-size:clamp(64px,14vw,140px);font-weight:900;letter-spacing:-0.055em;line-height:0.9;margin-bottom:22px;animation:fadeUp 0.6s ease 0.2s both}
+    .hero-h1 .white{color:var(--text)}
+    .hero-h1 .orange{color:var(--orange)}
+
+    .glitch{position:relative;display:inline-block}
+    .glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;font-size:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit}
+    .glitch::before{color:rgba(233,129,16,0.5);animation:gl1 4s infinite;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+    .glitch::after{color:rgba(229,193,158,0.35);animation:gl2 4s infinite;clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%)}
+    @keyframes gl1{0%,92%,100%{transform:translateX(0)}93%{transform:translateX(-3px)}95%{transform:translateX(3px)}97%{transform:translateX(-2px)}}
+    @keyframes gl2{0%,94%,100%{transform:translateX(0)}95%{transform:translateX(3px)}97%{transform:translateX(-3px)}99%{transform:translateX(2px)}}
+
+    .hero-sub{font-size:clamp(14px,2.2vw,18px);font-weight:300;color:var(--muted);max-width:480px;line-height:1.7;margin:0 auto 48px;font-style:italic;animation:fadeUp 0.6s ease 0.3s both}
+
+    .waitlist-wrap{display:flex;gap:0;max-width:400px;width:100%;background:rgba(255,255,255,0.04);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color 0.2s;animation:fadeUp 0.6s ease 0.4s both}
+    .waitlist-wrap:focus-within{border-color:rgba(229,193,158,0.4)}
+    .waitlist-input{flex:1;background:none;border:none;outline:none;padding:14px 18px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text)}
+    .waitlist-input::placeholder{color:var(--muted2)}
+    .waitlist-btn{background:var(--accent);border:none;cursor:pointer;padding:12px 20px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--bg);transition:opacity 0.15s;white-space:nowrap}
+    .waitlist-btn:hover{opacity:0.85}
+    .waitlist-note{font-size:10px;color:var(--muted2);margin-top:12px;font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;animation:fadeUp 0.6s ease 0.45s both}
+
+    .stat-bar{display:flex;gap:40px;align-items:center;margin-top:72px;border-top:0.5px solid var(--border);padding-top:32px;animation:fadeUp 0.6s ease 0.5s both}
+    .stat-item{text-align:center}
+    .stat-n{font-size:clamp(28px,5vw,48px);font-weight:900;letter-spacing:-0.05em;color:var(--text);line-height:1}
+    .stat-n em{font-style:normal;color:var(--orange)}
+    .stat-l{font-size:11px;color:var(--muted2);margin-top:4px;letter-spacing:0.04em;font-family:'JetBrains Mono',monospace}
+    .stat-divider{width:0.5px;height:40px;background:var(--border)}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ===== section label (shared) ===== */
+    .sec-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:14px}
+    .sec-h2{font-size:clamp(30px,5vw,52px);font-weight:900;letter-spacing:-0.04em;line-height:1.1;text-align:center;margin-bottom:64px}
+    .sec-h2 em{font-style:italic;font-weight:300;color:var(--accent)}
+
+    /* ===== persona grid ===== */
+    .persona-section{position:relative;z-index:3;border-top:0.5px solid var(--border);padding:100px 0 100px 40px;max-width:1440px;margin:0 auto}
+    .persona-grid{display:flex;gap:18px;overflow-x:auto;overflow-y:hidden;padding:4px 40px 28px 0;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+    .persona-grid::-webkit-scrollbar{height:5px}
+    .persona-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+    .persona-card{position:relative;flex:0 0 300px;min-height:380px;border-radius:18px;border:0.5px solid var(--border);overflow:hidden;padding:28px 26px;display:flex;flex-direction:column;justify-content:flex-end;background-size:cover;background-position:center;scroll-snap-align:start;opacity:0;transform:translateY(16px) scale(0.98);transition:opacity 0.4s ease,transform 0.4s ease}
+    .persona-card.visible{opacity:1;transform:translateY(0) scale(1)}
+    .persona-card::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,26,28,0.35) 0%,rgba(10,26,28,0.55) 35%,rgba(10,20,21,0.94) 80%);transition:background 0.3s ease}
+    .persona-card:hover::before{background:linear-gradient(180deg,rgba(10,26,28,0.45) 0%,rgba(10,26,28,0.65) 35%,rgba(10,20,21,0.97) 80%)}
+    .persona-card > *{position:relative;z-index:1}
+    .persona-title{font-size:19px;font-weight:700;letter-spacing:-0.02em;margin-bottom:18px}
+    .persona-title em{font-style:normal;color:var(--accent)}
+    .persona-list{list-style:none;margin-bottom:22px}
+    .persona-list li{font-size:13px;color:rgba(247,243,236,0.7);line-height:1.9;padding-left:16px;position:relative}
+    .persona-list li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--orange);opacity:0.7}
+    .persona-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);letter-spacing:0.06em;text-transform:lowercase}
+
+    .persona-cta{margin-top:44px;text-align:center;border-top:0.5px solid var(--border);padding-top:44px}
+    .persona-cta-h{font-size:clamp(22px,3.4vw,32px);font-weight:700;letter-spacing:-0.03em;margin-bottom:10px}
+    .persona-cta-h em{font-style:italic;font-weight:300;color:var(--accent)}
+    .persona-cta-sub{font-size:14px;color:var(--muted);max-width:440px;margin:0 auto 22px;line-height:1.7}
+    .persona-cta-link{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);text-decoration:none;letter-spacing:0.04em;border-bottom:0.5px solid rgba(233,129,16,0.4);padding-bottom:2px;transition:opacity 0.15s}
+    .persona-cta-link:hover{opacity:0.75}
+
+    /* ===== product showcase ===== */
+    .showcase{position:relative;z-index:3;border-top:0.5px solid var(--border);padding:110px 40px;display:flex;align-items:center;justify-content:center;gap:80px;max-width:1180px;margin:0 auto;flex-wrap:wrap}
+    .showcase-copy{flex:1;min-width:300px;max-width:440px}
+    .showcase-eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:18px}
+    .showcase-h2{font-size:clamp(28px,4.4vw,44px);font-weight:900;letter-spacing:-0.04em;line-height:1.1;margin-bottom:18px}
+    .showcase-h2 em{font-style:italic;font-weight:300;color:var(--accent)}
+    .showcase-sub{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:40px}
+    .showcase-feat{display:flex;flex-direction:column;gap:26px}
+    .showcase-feat-item{border-top:0.5px solid var(--border);padding-top:18px}
+    .showcase-feat-item b{display:block;font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+    .showcase-feat-item span{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+    .showcase-visual{flex:0 0 auto;position:relative}
+    .match-card-frame{width:300px;border-radius:28px;overflow:hidden;border:1px solid rgba(229,193,158,0.2);box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(233,129,16,0.08);transform:rotate(-2deg);transition:transform 0.4s ease}
+    .match-card-frame:hover{transform:rotate(0deg) translateY(-6px)}
+    .match-card-frame img{width:100%;display:block}
+
+    /* ===== trust section ===== */
+    .trust{position:relative;z-index:3;border-top:0.5px solid var(--border);padding:0;display:grid;grid-template-columns:1fr 1fr;min-height:480px}
+    .trust-copy{display:flex;flex-direction:column;justify-content:center;padding:80px 60px}
+    .trust-h2{font-size:clamp(28px,4.4vw,44px);font-weight:900;letter-spacing:-0.04em;line-height:1.15;margin-bottom:20px}
+    .trust-h2 em{font-style:italic;font-weight:300;color:var(--accent)}
+    .trust-sub{font-size:14px;color:var(--muted);line-height:1.9;max-width:400px}
+    .trust-img{position:relative;overflow:hidden}
+    .trust-img img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(0.65) brightness(0.75)}
+    .trust-img::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,26,28,0.85),rgba(10,26,28,0.1));}
+
+    /* ===== testimonial marquee ===== */
+    .testi-section{position:relative;z-index:3;border-top:0.5px solid var(--border);padding:100px 0;overflow:hidden}
+    .testi-row{display:flex;gap:20px;width:max-content;animation:scrollRow 46s linear infinite}
+    .testi-row.reverse{animation-direction:reverse;margin-top:20px}
+    .testi-card{width:340px;flex:0 0 auto;background:var(--bg2);border:0.5px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:18px}
+    .testi-quote{font-size:13.5px;color:var(--muted);line-height:1.8;font-style:italic}
+    .testi-who{display:flex;align-items:center;gap:12px}
+    .testi-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--bg);background:var(--accent);flex-shrink:0}
+    .testi-name{font-size:12.5px;font-weight:700;color:var(--text)}
+    @keyframes scrollRow{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    @media(prefers-reduced-motion:reduce){.testi-row{animation:none}}
+
+    /* ===== final ===== */
+    .final{position:relative;z-index:3;text-align:center;padding:100px 40px 140px;border-top:0.5px solid var(--border)}
+    .final-h2{font-size:clamp(40px,8vw,80px);font-weight:900;letter-spacing:-0.05em;line-height:0.95;margin-bottom:18px}
+    .final-h2 em{font-style:italic;font-weight:300;color:var(--accent)}
+    .final-sub{font-size:15px;color:var(--muted);margin-bottom:36px;line-height:1.6;font-style:italic}
+    .final-btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--bg);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:15px 34px;border-radius:99px;text-decoration:none;transition:opacity 0.15s,transform 0.15s}
+    .final-btn:hover{opacity:0.84;transform:translateY(-2px)}
+
+    footer{position:relative;z-index:3;border-top:0.5px solid var(--border);padding:24px 40px;display:flex;align-items:center;justify-content:space-between}
+    .foot-l{font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace}
+    .foot-ig{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted2);text-decoration:none;transition:color 0.15s;font-family:'JetBrains Mono',monospace}
+    .foot-ig:hover{color:var(--accent)}
+
+    @media(max-width:900px){
+      .showcase{flex-direction:column;gap:50px;text-align:center}
+      .showcase-feat-item{text-align:left}
+      .trust{grid-template-columns:1fr}
+      .trust-img{min-height:280px}
+      .trust-copy{padding:60px 32px}
+    }
+    @media(max-width:640px){
+      .gl-nav{padding:14px 20px}
+      .fcard:nth-child(n+3){display:none}
+      .stat-bar{gap:20px}
+      .persona-section{padding:70px 20px}
+      .showcase{padding:80px 20px}
+      .final{padding:80px 20px 100px}
+      footer{padding:20px;flex-direction:column;gap:10px;text-align:center}
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="streak"></div>
+<div class="streak streak2"></div>
+
+<div class="cards-ring">
+  <div class="fcard">YouTube</div>
+  <div class="fcard">Reddit</div>
+  <div class="fcard">Twitter / X</div>
+  <div class="fcard">Instagram</div>
+</div>
+
+<nav class="gl-nav" id="nav">
+  <a href="#" class="nav-logo">
+    <div class="nav-goose"><img src="assets/goose-icon.png" alt="goose"/></div>
+    <span class="nav-word">goose<em>less</em></span>
+  </a>
+  <a href="https://tally.so/r/lbggvW" target="_blank" rel="noopener" class="nav-btn">Join waitlist</a>
+</nav>
+
+<div id="main">
+  <p class="hero-eyebrow">AI matchmaking engine</p>
+  <div class="hero-icon"><img src="assets/goose-icon.png" alt="Gooseless"/></div>
+
+  <h1 class="hero-h1">
+    <span class="glitch white" data-text="goose">goose</span><span class="orange">less</span>
+  </h1>
+
+  <p class="hero-sub">We convert what you consume online into behavioral predictions — then find someone whose digital fingerprint matches yours.</p>
+
+  <div class="waitlist-wrap">
+    <input class="waitlist-input" type="email" placeholder="your@email.com" id="emailInput"/>
+    <button class="waitlist-btn" onclick="joinWaitlist()">Join waitlist →</button>
+  </div>
+  <p class="waitlist-note">// one email when your spot is ready. that's it.</p>
+
+  <div class="stat-bar">
+    <div class="stat-item"><div class="stat-n"><em>4</em></div><div class="stat-l">real dates</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><div class="stat-n">50</div><div class="stat-l">active users</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><div class="stat-n"><em>0</em></div><div class="stat-l">photos used</div></div>
+  </div>
+</div>
+
+<!-- ===== PERSONA GRID (mirrors Cue "Cue is for your life") ===== -->
+<section class="persona-section">
+  <p class="sec-label">// gooseless is for everyone tired of swiping</p>
+  <h2 class="sec-h2">One algorithm. <em>Every kind of person.</em></h2>
+
+  <div class="persona-grid">
+    <div class="persona-card" style="background-image:url('assets/hug.jpg')">
+      <div class="persona-title">Gooseless the <em>Fingerprint</em></div>
+      <ul class="persona-list">
+        <li>Subscriptions, follows, and communities mapped</li>
+        <li>Nobody performs for their YouTube feed</li>
+        <li>The most honest data about who you are</li>
+      </ul>
+      <div class="persona-tag">for the swipe-fatigued</div>
+    </div>
+    <div class="persona-card" style="background-image:url('assets/piggyback.jpg')">
+      <div class="persona-title">Gooseless the <em>Vectors</em></div>
+      <ul class="persona-list">
+        <li>Unstructured consumption turned into behavioral vectors</li>
+        <li>Every platform adds a new layer of signal</li>
+        <li>High-dimensional, not surface-level</li>
+      </ul>
+      <div class="persona-tag">for the over-it daters</div>
+    </div>
+    <div class="persona-card" style="background-image:url('assets/portrait.jpg')">
+      <div class="persona-title">Gooseless the <em>Score</em></div>
+      <ul class="persona-list">
+        <li>Compatibility scored across behavioral embeddings</li>
+        <li>Not what you say you like, what you actually watch</li>
+        <li>Recalculated every time you consume something new</li>
+      </ul>
+      <div class="persona-tag">for the pattern-seekers</div>
+    </div>
+    <div class="persona-card" style="background-image:url('assets/group-sunset.jpg')">
+      <div class="persona-title">Gooseless the <em>Signal</em></div>
+      <ul class="persona-list">
+        <li>YouTube, Reddit, Twitter / X, Instagram</li>
+        <li>Every platform sharpens the prediction</li>
+        <li>More signal, sharper match</li>
+      </ul>
+      <div class="persona-tag">for the terminally online</div>
+    </div>
+    <div class="persona-card" style="background-image:url('assets/group-laugh.jpg')">
+      <div class="persona-title">Gooseless the <em>Archetype</em></div>
+      <ul class="persona-list">
+        <li>Your behavioral archetype, surfaced</li>
+        <li>See what your consumption says about you</li>
+        <li>Matched with people who complement it</li>
+      </ul>
+      <div class="persona-tag">for the self-aware</div>
+    </div>
+    <div class="persona-card" style="background-image:url('assets/hands.jpg')">
+      <div class="persona-title">Gooseless the <em>Chemistry</em></div>
+      <ul class="persona-list">
+        <li>The model compounds with every like and pass</li>
+        <li>Learns what real chemistry looks like for you</li>
+        <li>Gets sharper the longer you use it</li>
+      </ul>
+      <div class="persona-tag">for the long game</div>
+    </div>
+  </div>
+
+  <div class="persona-cta">
+    <div class="persona-cta-h">Find <em>your</em> people.</div>
+    <p class="persona-cta-sub">Gooseless learns your behavioral fingerprint and matches you to people who share it. Sign up to get yours.</p>
+    <a href="https://tally.so/r/lbggvW" target="_blank" rel="noopener" class="persona-cta-link">join the waitlist →</a>
+  </div>
+</section>
+
+<!-- ===== PRODUCT SHOWCASE (mirrors Cue "The more you Cue, the more it fits") ===== -->
+<section class="showcase">
+  <div class="showcase-copy">
+    <p class="showcase-eyebrow">// how it works</p>
+    <h2 class="showcase-h2">The more you watch, <em>the sharper it gets.</em></h2>
+    <p class="showcase-sub">No surveys. No prompts. No curated photos. Gooseless works with the platforms you're already using every day.</p>
+    <div class="showcase-feat">
+      <div class="showcase-feat-item">
+        <b>YouTube &amp; Reddit</b>
+        <span>Subscriptions and communities sync automatically once connected</span>
+      </div>
+      <div class="showcase-feat-item">
+        <b>Twitter / X &amp; Instagram</b>
+        <span>Follows and engagement layer on more behavioral signal</span>
+      </div>
+      <div class="showcase-feat-item">
+        <b>Match dashboard</b>
+        <span>See exactly why you matched — channel by channel, category by category</span>
+      </div>
+    </div>
+  </div>
+  <div class="showcase-visual">
+    <div class="match-card-frame"><img src="assets/match-card.png" alt="Gooseless match result showing 100% subscription overlap"/></div>
+  </div>
+</section>
+
+<!-- ===== TRUST (mirrors Cue "Private. Secure. Editable.") ===== -->
+<section class="trust">
+  <div class="trust-copy">
+    <h2 class="trust-h2">Private. Secure. <em>Yours.</em></h2>
+    <p class="trust-sub">Everything Gooseless learns about you is visible only to you. Your data is never sold, never shown to a match, and yours to disconnect at any time.</p>
+  </div>
+  <div class="trust-img"><img src="assets/hands.jpg" alt="Couple holding hands"/></div>
+</section>
+
+<!-- ===== TESTIMONIALS (mirrors Cue "Cue the love") ===== -->
+<section class="testi-section">
+  <p class="sec-label">// from real dates</p>
+  <h2 class="sec-h2">Gooseless, <em>the love.</em></h2>
+
+  <div class="testi-row" id="testiRow1"></div>
+  <div class="testi-row reverse" id="testiRow2"></div>
+</section>
+
+<div class="final">
+  <h2 class="final-h2">your turn.<br><em>find your people.</em></h2>
+  <p class="final-sub">Seats open in small batches.<br>One email when yours is ready.</p>
+  <a href="https://tally.so/r/lbggvW" target="_blank" rel="noopener" class="final-btn">Join the waitlist →</a>
+</div>
+
+<footer>
+  <span class="foot-l">© 2025 Gooseless AI</span>
+  <a href="https://www.instagram.com/gooseless.ai" target="_blank" rel="noopener" class="foot-ig">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/></svg>
+    @gooseless.ai
+  </a>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 30));
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 90); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.persona-card').forEach(el => obs.observe(el));
+
+  function joinWaitlist() {
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email || !email.includes('@')) return;
+    window.open('https://tally.so/r/lbggvW', '_blank');
+  }
+  document.getElementById('emailInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinWaitlist(); });
+
+  // ===== testimonials =====
+  const testimonials = [
+    { name: "Anush S.", quote: "I was skeptical at first, but our conversations felt much more natural than matches I'd gotten elsewhere. We had surprisingly niche interests in common that never would have come up from a dating profile." },
+    { name: "Mithilesh J.", quote: "I liked that the match wasn't based on prompts or photos alone. It felt like the app understood what I actually spend my time learning about and watching." },
+    { name: "Mansi S.", quote: "We ended up talking for hours because we kept discovering shared interests. It was one of the easiest first conversations I've had through a dating platform." },
+    { name: "Gaurav", quote: "The recommendations felt different from traditional apps. Instead of matching on surface-level preferences, it felt like there was a genuine overlap in how we think and what we're curious about." },
+    { name: "Harsh J.", quote: "I'd use this again because the matches felt more intentional. Even when there wasn't romantic chemistry, the conversations were much more engaging than what I'm used to." }
+  ];
+
+  function initials(name) {
+    return name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+  }
+
+  function buildCard(t) {
+    const card = document.createElement('div');
+    card.className = 'testi-card';
+    card.innerHTML = `
+      <p class="testi-quote">"${t.quote}"</p>
+      <div class="testi-who">
+        <div class="testi-avatar">${initials(t.name)}</div>
+        <div class="testi-name">${t.name}</div>
+      </div>`;
+    return card;
+  }
+
+  function fillRow(rowEl, list) {
+    // duplicate the list twice for a seamless loop
+    [...list, ...list].forEach(t => rowEl.appendChild(buildCard(t)));
+  }
+
+  fillRow(document.getElementById('testiRow1'), testimonials);
+  fillRow(document.getElementById('testiRow2'), [...testimonials].reverse());
+</script>
+</body>
+</html>
